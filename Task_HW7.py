@@ -9,6 +9,8 @@ def input_error(func): # Декоратор для обробки помилок
             return str(e)
         except KeyError:
             return "Contact not found."
+        except AttributeError:
+            return "Contact not found."
         except IndexError:
             return "Not enough arguments provided."
     return inner
@@ -32,10 +34,14 @@ class Phone(Field):
 class Birthday(Field):
     def __init__(self, value):
         try:
-            self.date = datetime.strptime(value, "%d.%m.%Y") # Перевіка дати та конвертація в datetime, дата має бути у форматі DD.MM.YYYY
+            datetime.strptime(value, "%d.%m.%Y") # Перевіка дати та конвертація в datetime, дата має бути у форматі DD.MM.YYYY
         except ValueError:
             raise ValueError("Invalid date format. Use DD.MM.YYYY")
         super().__init__(value)
+
+    @property 
+    def date(self):
+        return datetime.strptime(self.value, "%d.%m.%Y")
  
 
 class Record: # Клас для зберігання інформації про контакт, включаючи ім'я та список телефонів
@@ -154,8 +160,6 @@ def add_contact(args, book: AddressBook):
 def change_contact(args, book: AddressBook):
     name, old_phone, new_phone, *_ = args
     record = book.find(name)
-    if record is None:
-        raise KeyError
     record.edit_phone(old_phone, new_phone)
     return "Phone number updated."
 
@@ -164,8 +168,6 @@ def change_contact(args, book: AddressBook):
 def show_phone(args, book: AddressBook):
     name, *_ = args
     record = book.find(name)
-    if record is None:
-        raise KeyError
     if not record.phones:
         return f"{name} has no phone numbers."
     phones = '; '.join(p.value for p in record.phones)
@@ -181,8 +183,6 @@ def show_all(args, book: AddressBook):
 def add_birthday(args, book: AddressBook):
     name, birthday_str, *_ = args
     record = book.find(name)
-    if record is None:
-        raise KeyError
     record.add_birthday(birthday_str)
     return f"Birthday added for {name}."
 
@@ -191,8 +191,6 @@ def add_birthday(args, book: AddressBook):
 def show_birthday(args, book: AddressBook):
     name, *_ = args
     record = book.find(name)
-    if record is None:
-        raise KeyError
     if record.birthday is None:
         return f"{name} has no birthday set."
     return f"{name}'s birthday: {record.birthday.value}"
